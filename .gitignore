@@ -1,0 +1,12 @@
+# Virtual Environment
+venv/
+__pycache__/
+*.pyc
+
+# Uploads and temporary files
+uploads/
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
