@@ -129,6 +129,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const start = hasW ? seg.words[0].start : seg.start;
             const end = hasW ? seg.words.at(-1).end : seg.end;
+
+            // Timestamp badge
+            const timeBadge = document.createElement('span');
+            timeBadge.className = 'caption-time';
+            const m = Math.floor(start / 60);
+            const s = Math.floor(start % 60).toString().padStart(2, '0');
+            timeBadge.textContent = m + ':' + s;
+            el.appendChild(timeBadge);
+
             el.onclick = () => { audioPlayer.currentTime = start; audioPlayer.play(); };
 
             captionsContent.appendChild(el);
@@ -348,4 +357,71 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // --- Playback Speed Control ---
+    const speedBtn = $('speedBtn');
+    const speeds = [0.75, 1, 1.25, 1.5, 1.75, 2];
+    let speedIdx = 1; // default 1x
+
+    if (speedBtn) {
+        speedBtn.addEventListener('click', () => {
+            speedIdx = (speedIdx + 1) % speeds.length;
+            const rate = speeds[speedIdx];
+            audioPlayer.playbackRate = rate;
+            speedBtn.textContent = rate + '×';
+            showToast('Speed: ' + rate + '×');
+        });
+    }
+
+    // --- Keyboard Shortcuts ---
+    const shortcutToast = $('shortcutToast');
+    let toastTimer = null;
+
+    function showToast(msg) {
+        if (!shortcutToast) return;
+        shortcutToast.innerHTML = msg;
+        shortcutToast.classList.add('visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => shortcutToast.classList.remove('visible'), 1200);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        // Don't capture when user is typing in an input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        switch (e.code) {
+            case 'Space':
+                e.preventDefault();
+                if (audioPlayer.paused) { audioPlayer.play(); showToast('▶ Play'); }
+                else { audioPlayer.pause(); showToast('⏸ Pause'); }
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 10);
+                showToast('<kbd>←</kbd> −10s');
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                audioPlayer.currentTime = Math.min(audioPlayer.duration || 0, audioPlayer.currentTime + 10);
+                showToast('<kbd>→</kbd> +10s');
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                audioPlayer.volume = Math.min(1, audioPlayer.volume + 0.1);
+                showToast('🔊 ' + Math.round(audioPlayer.volume * 100) + '%');
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                audioPlayer.volume = Math.max(0, audioPlayer.volume - 0.1);
+                showToast('🔉 ' + Math.round(audioPlayer.volume * 100) + '%');
+                break;
+            case 'KeyM':
+                audioPlayer.muted = !audioPlayer.muted;
+                showToast(audioPlayer.muted ? '🔇 Muted' : '🔊 Unmuted');
+                break;
+            case 'KeyS':
+                if (speedBtn) speedBtn.click();
+                break;
+        }
+    });
 });

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audiolens — Dyslexia-Friendly Reader</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css?v=3">
+    <link rel="stylesheet" href="/static/styles.css?v=4">
 </head>
 
 <body>
@@ -90,6 +90,9 @@
             <span class="np-title" id="trackTitle">No track loaded</span>
         </div>
         <audio id="audioPlayer" controls></audio>
+        <div class="speed-control">
+            <button class="speed-btn" id="speedBtn" title="Playback speed">1×</button>
+        </div>
         <div id="panelToggles">
             <button id="togglePdf" class="panel-toggle active" title="Toggle PDF">
                 <span class="toggle-icon">📄</span>
@@ -102,7 +105,10 @@
         </div>
     </footer>
 
-    <script src="/static/app.js?v=3"></script>
+    <!-- Shortcut toast -->
+    <div class="shortcut-toast" id="shortcutToast"></div>
+
+    <script src="/static/app.js?v=4"></script>
 </body>
 
 </html>
