@@ -70,6 +70,7 @@ body {
     letter-spacing: -0.03em;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -287,6 +288,67 @@ body {
     color: var(--accent);
 }
 
+/* ── Panel Toggles ───────────────────────── */
+#panelToggles {
+    display: none;
+    gap: 2px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2px;
+}
+
+.panel-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--text-mid);
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .2s var(--ease);
+    white-space: nowrap;
+}
+
+.panel-toggle:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+}
+
+.panel-toggle.active {
+    background: rgba(250, 88, 106, 0.12);
+    border-color: rgba(250, 88, 106, 0.25);
+    color: var(--text);
+}
+
+.toggle-icon {
+    font-size: 0.8rem;
+    line-height: 1;
+}
+
+.toggle-label {
+    font-weight: 600;
+}
+
+/* Panel hidden states */
+#pdfPanel.panel-hidden {
+    display: none !important;
+}
+
+#captionsPanel.panel-hidden {
+    display: none !important;
+}
+
+#resizer.panel-hidden {
+    display: none !important;
+}
+
 /* ── Split Layout ────────────────────────── */
 #mainContent {
     flex: 1;
@@ -328,8 +390,8 @@ body {
 
 /* captions Panel */
 #captionsPanel {
-    width: 420px;
-    min-width: 340px;
+    width: 320px;
+    min-width: 250px;
     position: relative;
     background: var(--bg);
     display: flex;
@@ -380,7 +442,7 @@ body {
 
 /* Caption lines */
 .caption-line {
-    font-size: 1.35rem;
+    font-size: 1.2rem;
     font-weight: 700;
     line-height: 1.5;
     color: var(--text-dim);
@@ -453,8 +515,7 @@ body {
 /* ── Audio Bar ───────────────────────────── */
 #audioBar {
     display: none;
-    flex-wrap: wrap;
-    padding: 10px 20px;
+    padding: 6px 16px;
     background: var(--surface);
     border-top: 1px solid var(--border);
     flex-shrink: 0;
@@ -486,8 +547,8 @@ body {
 
 #audioBar audio {
     flex: 1;
-    min-width: 200px;
-    height: 36px;
+    min-width: 150px;
+    height: 32px;
     border-radius: 20px;
     filter: invert(1) hue-rotate(180deg);
 }

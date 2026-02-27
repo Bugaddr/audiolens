@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pdfLabel = $('pdfLabel'), audioLabel = $('audioLabel');
     const trackTitle = $('trackTitle');
 
-    let poll = null, lines = [], activeLine = null;
+    let poll = null, lines = [], activeLine = null, currentJobId = null;
 
     // File selection feedback
     pdfUpload.addEventListener('change', () => {
@@ -70,6 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 setStatus('Ready', 'ready');
                 uploadBtn.disabled = false;
                 uploadBtn.classList.remove('loading');
+                currentJobId = id;
+                localStorage.setItem('lastJobId', id);
                 show(d.pdf_url, d.audio_url, d.transcript, d.title);
             } else if (d.status === 'error') {
                 clearInterval(poll);
@@ -89,8 +91,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if ($('historyBar')) {
             $('historyBar').style.display = 'none';
         }
+        // Hide top navbar when reading
+        if ($('topBar')) {
+            $('topBar').style.display = 'none';
+        }
 
-        pdfFrame.src = pdfUrl;
+        // Show panel toggles (they live inside audioBar, which is shown via flex)
+        applyPanelVisibility();
+
+        // Append PDF parameters for Odd Spread and Fit
+        const paramStr = pdfUrl.includes('#') ? '&' : '#';
+        pdfFrame.src = pdfUrl + paramStr + 'pageLayout=TwoPageRight&view=Fit';
         pdfFrame.style.display = 'block';
 
         audioPlayer.src = audioUrl;
@@ -173,7 +184,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     loadHistory();
 
+    // Restore last open page
+    const lastJobId = localStorage.getItem('lastJobId');
+    if (lastJobId) {
+        setStatus('Restoring last session…', 'working');
+        startPoll(lastJobId);
+    }
+
     // Sync captions to audio (60fps loop instead of laggy timeupdate)
+    let scrollClientHeight = captionsScroll.clientHeight;
+    // Update cached height on resize
+    window.addEventListener('resize', () => { scrollClientHeight = captionsScroll.clientHeight; });
+
     function synccaptions() {
         requestAnimationFrame(synccaptions);
 
@@ -198,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const el = lines[idx].el;
             captionsScroll.scrollTo({
-                top: el.offsetTop - captionsScroll.clientHeight / 2 + el.offsetHeight / 2,
+                top: el.offsetTop - scrollClientHeight / 2 + el.offsetHeight / 2,
                 behavior: 'smooth'
             });
             activeLine = el;
@@ -210,21 +232,63 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(synccaptions);
 
     // Save progress periodically
+    let audioPathName = '';
     audioPlayer.addEventListener('timeupdate', () => {
         if (audioPlayer.src && audioPlayer.currentTime > 0) {
             // Save current time keyed by the audio URL
-            localStorage.setItem('pos_' + new URL(audioPlayer.src).pathname, audioPlayer.currentTime);
+            if (!audioPathName) audioPathName = new URL(audioPlayer.src).pathname;
+            localStorage.setItem('pos_' + audioPathName, audioPlayer.currentTime);
         }
     });
 
     // Restore progress on loaded metadata
     audioPlayer.addEventListener('loadedmetadata', () => {
-        const savedTime = localStorage.getItem('pos_' + new URL(audioPlayer.src).pathname);
+        audioPathName = new URL(audioPlayer.src).pathname;
+        const savedTime = localStorage.getItem('pos_' + audioPathName);
         if (savedTime && parseFloat(savedTime) > 2) {
             audioPlayer.currentTime = parseFloat(savedTime);
             // Run one sync frame immediately to scroll the captions down
             synccaptions();
         }
+    });
+
+    // --- Panel Toggle Logic ---
+    const panelToggles = $('panelToggles');
+    const togglePdfBtn = $('togglePdf');
+    const toggleCaptionsBtn = $('toggleCaptions');
+    const pdfPanel = $('pdfPanel');
+    const resizerEl = $('resizer');
+    const captionsPanelEl = $('captionsPanel');
+
+    // Restore saved toggle state
+    const savedPdfVisible = localStorage.getItem('panelPdfVisible');
+    const savedCaptionsVisible = localStorage.getItem('panelCaptionsVisible');
+    let pdfVisible = savedPdfVisible !== 'false';
+    let captionsVisible = savedCaptionsVisible !== 'false';
+
+    function applyPanelVisibility() {
+        panelToggles.style.display = 'flex';
+        pdfPanel.classList.toggle('panel-hidden', !pdfVisible);
+        captionsPanelEl.classList.toggle('panel-hidden', !captionsVisible);
+        resizerEl.classList.toggle('panel-hidden', !pdfVisible || !captionsVisible);
+        togglePdfBtn.classList.toggle('active', pdfVisible);
+        toggleCaptionsBtn.classList.toggle('active', captionsVisible);
+        localStorage.setItem('panelPdfVisible', pdfVisible);
+        localStorage.setItem('panelCaptionsVisible', captionsVisible);
+    }
+
+    togglePdfBtn.addEventListener('click', () => {
+        // Don't allow hiding both panels
+        if (pdfVisible && !captionsVisible) return;
+        pdfVisible = !pdfVisible;
+        applyPanelVisibility();
+    });
+
+    toggleCaptionsBtn.addEventListener('click', () => {
+        // Don't allow hiding both panels
+        if (captionsVisible && !pdfVisible) return;
+        captionsVisible = !captionsVisible;
+        applyPanelVisibility();
     });
 
     // --- Adjustable Split View Resizer ---
@@ -252,8 +316,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Calculate new width for the right panel (distance from right edge of window to mouse)
             const newWidth = document.body.clientWidth - e.clientX;
 
-            // Constrain width between 300px and (window width - 300px)
-            if (newWidth >= 300 && newWidth <= document.body.clientWidth - 300) {
+            // Constrain width between 250px and (window width - 250px)
+            if (newWidth >= 250 && newWidth <= document.body.clientWidth - 250) {
                 captionsPanel.style.width = newWidth + 'px';
             }
         });
