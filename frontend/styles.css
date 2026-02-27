@@ -291,49 +291,59 @@ body {
 /* ── Panel Toggles ───────────────────────── */
 #panelToggles {
     display: none;
-    gap: 2px;
+    gap: 1px;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 2px;
+    border-radius: 10px;
+    padding: 3px;
 }
 
 .panel-toggle {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
+    gap: 6px;
+    padding: 6px 14px;
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 6px;
+    border-radius: 8px;
     color: var(--text-mid);
     font-size: 0.72rem;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
-    transition: all .2s var(--ease);
+    transition: all .25s var(--ease);
     white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .panel-toggle:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.07);
     color: var(--text-muted);
 }
 
 .panel-toggle.active {
-    background: rgba(250, 88, 106, 0.12);
-    border-color: rgba(250, 88, 106, 0.25);
+    background: rgba(250, 88, 106, 0.14);
+    border-color: rgba(250, 88, 106, 0.28);
     color: var(--text);
+    box-shadow: 0 0 8px rgba(250, 88, 106, 0.1);
+}
+
+/* Dim the button when it's the only active one (can't be toggled off) */
+.panel-toggle.active.locked {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .toggle-icon {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     line-height: 1;
 }
 
 .toggle-label {
     font-weight: 600;
+    letter-spacing: -0.01em;
 }
 
 /* Panel hidden states */
@@ -343,6 +353,25 @@ body {
 
 #captionsPanel.panel-hidden {
     display: none !important;
+}
+
+/* When captions is the only visible panel, let it fill */
+#captionsPanel.panel-solo {
+    flex: 1 1 0% !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: none !important;
+}
+
+#captionsPanel.panel-solo #captionsScroll {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 48px;
+}
+
+#captionsPanel.panel-solo .caption-line {
+    font-size: 1.5rem;
+    line-height: 1.6;
 }
 
 #resizer.panel-hidden {
@@ -390,7 +419,9 @@ body {
 
 /* captions Panel */
 #captionsPanel {
-    width: 320px;
+    /* Size so PDF panel fits a two-page (odd) spread at the correct aspect ratio.
+       Spread = 17 : 11 (US Letter).  Available height ≈ 100vh − 44px audiobar. */
+    width: clamp(250px, calc(100vw - (100vh - 44px) * 17 / 11), 400px);
     min-width: 250px;
     position: relative;
     background: var(--bg);

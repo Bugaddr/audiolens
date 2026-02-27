@@ -270,9 +270,23 @@ document.addEventListener('DOMContentLoaded', () => {
         panelToggles.style.display = 'flex';
         pdfPanel.classList.toggle('panel-hidden', !pdfVisible);
         captionsPanelEl.classList.toggle('panel-hidden', !captionsVisible);
+
+        const solo = captionsVisible && !pdfVisible;
+        captionsPanelEl.classList.toggle('panel-solo', solo);
+        // Clear inline width when solo so CSS flex:1 takes over; restore when split
+        if (solo) {
+            captionsPanelEl.style.width = '';
+        } else {
+            const saved = localStorage.getItem('captionsWidth');
+            if (saved) captionsPanelEl.style.width = saved;
+        }
+
         resizerEl.classList.toggle('panel-hidden', !pdfVisible || !captionsVisible);
         togglePdfBtn.classList.toggle('active', pdfVisible);
         toggleCaptionsBtn.classList.toggle('active', captionsVisible);
+        // Mark the sole-active button as locked so user knows it can't be hidden
+        togglePdfBtn.classList.toggle('locked', pdfVisible && !captionsVisible);
+        toggleCaptionsBtn.classList.toggle('locked', captionsVisible && !pdfVisible);
         localStorage.setItem('panelPdfVisible', pdfVisible);
         localStorage.setItem('panelCaptionsVisible', captionsVisible);
     }
@@ -297,9 +311,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const pdfFrameEl = $('pdfFrame');
     let isResizing = false;
 
-    // Restore saved width
+    // Restore saved width (skip if subtitle-only mode — solo uses flex:1)
     const savedWidth = localStorage.getItem('captionsWidth');
-    if (savedWidth && captionsPanel) {
+    if (savedWidth && captionsPanel && !captionsPanel.classList.contains('panel-solo')) {
         captionsPanel.style.width = savedWidth;
     }
 
