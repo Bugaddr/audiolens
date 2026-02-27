@@ -358,6 +358,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Night Mode (PDF Invert) ---
+    const nightBtn = $('toggleNightPdf');
+    let nightMode = localStorage.getItem('pdfNightMode') === 'true';
+
+    function applyNightMode() {
+        pdfFrame.classList.toggle('night-mode', nightMode);
+        nightBtn.classList.toggle('active', nightMode);
+        localStorage.setItem('pdfNightMode', nightMode);
+    }
+    // Apply saved preference on load
+    applyNightMode();
+
+    nightBtn.addEventListener('click', () => {
+        nightMode = !nightMode;
+        applyNightMode();
+        showToast(nightMode ? '🌙 Night PDF on' : '☀️ Night PDF off');
+    });
+
     // --- Playback Speed Control ---
     const speedBtn = $('speedBtn');
     const speeds = [0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -421,6 +439,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'KeyS':
                 if (speedBtn) speedBtn.click();
+                break;
+            case 'KeyN':
+                nightBtn.click();
                 break;
         }
     });

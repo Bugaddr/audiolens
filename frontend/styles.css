@@ -376,6 +376,14 @@ body {
     cursor: not-allowed;
 }
 
+.toggle-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    margin: 0 2px;
+    flex-shrink: 0;
+}
+
 .toggle-icon {
     font-size: 0.85rem;
     line-height: 1;
@@ -438,6 +446,11 @@ body {
     height: 100%;
     border: none;
     display: none;
+    transition: filter .3s var(--ease);
+}
+
+#pdfFrame.night-mode {
+    filter: invert(1) hue-rotate(180deg);
 }
 
 /* Resizer */
