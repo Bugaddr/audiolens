@@ -422,6 +422,12 @@ body {
     line-height: 1.65;
 }
 
+#captionsPanel.panel-solo #audioBar {
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+}
+
 #resizer.panel-hidden {
     display: none !important;
 }
@@ -520,6 +526,12 @@ body {
 .captions-fade-bottom {
     bottom: 0;
     background: linear-gradient(to top, var(--bg) 10%, transparent);
+    transition: bottom .2s var(--ease);
+}
+
+/* When audio bar is visible, lift fade above it */
+#captionsPanel .captions-fade-bottom.above-bar {
+    bottom: auto;
 }
 
 #captionsScroll {
@@ -634,25 +646,22 @@ body {
     line-height: 1.4;
 }
 
-/* ── Audio Bar ───────────────────────────── */
+/* ── Audio Bar (embedded in captions panel) ── */
 #audioBar {
     display: none;
-    padding: 0 20px;
-    height: 56px;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
     background: var(--surface);
     border-top: 1px solid var(--border);
     flex-shrink: 0;
-    align-items: center;
-    gap: 16px;
 }
 
 .now-playing {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-shrink: 0;
     min-width: 0;
-    max-width: 260px;
 }
 
 .np-icon {
@@ -678,12 +687,18 @@ body {
 
 /* Custom audio player styling */
 #audioBar audio {
-    flex: 1;
-    min-width: 150px;
+    width: 100%;
     height: 32px;
     border-radius: 20px;
     filter: invert(1) hue-rotate(180deg);
     opacity: 0.85;
+}
+
+.audio-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: space-between;
 }
 
 /* Speed control */
@@ -716,7 +731,7 @@ body {
 /* ── Keyboard Shortcut Toast ─────────────── */
 .shortcut-toast {
     position: fixed;
-    bottom: 72px;
+    bottom: 24px;
     left: 50%;
     transform: translateX(-50%) translateY(20px);
     background: var(--surface2);
@@ -795,17 +810,12 @@ body {
         padding: 10px 14px;
     }
 
-    .now-playing {
-        display: none;
-    }
-
     #audioBar {
-        padding: 0 12px;
-        height: 48px;
+        padding: 10px 12px;
         gap: 8px;
     }
 
-    .speed-control {
+    .now-playing {
         display: none;
     }
 }

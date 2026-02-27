@@ -107,6 +107,10 @@ document.addEventListener('DOMContentLoaded', () => {
         audioPlayer.src = audioUrl;
         $('audioBar').style.display = 'flex';
 
+        // Position the bottom fade above the audio bar
+        const fadeBottom = captionsPanelEl.querySelector('.captions-fade-bottom');
+        if (fadeBottom) fadeBottom.classList.add('above-bar');
+
         trackTitle.textContent = title || 'Now Playing';
 
         buildcaptions(transcript);

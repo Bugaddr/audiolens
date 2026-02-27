@@ -80,35 +80,37 @@
                 <h3>Synced captions</h3>
                 <p>Words will light up as the audio plays</p>
             </div>
+
+            <!-- Audio controls (embedded in captions panel) -->
+            <div id="audioBar">
+                <div class="now-playing" id="nowPlaying">
+                    <span class="np-icon">🎧</span>
+                    <span class="np-title" id="trackTitle">No track loaded</span>
+                </div>
+                <audio id="audioPlayer" controls></audio>
+                <div class="audio-bar-row">
+                    <div class="speed-control">
+                        <button class="speed-btn" id="speedBtn" title="Playback speed">1×</button>
+                    </div>
+                    <div id="panelToggles">
+                        <button id="togglePdf" class="panel-toggle active" title="Toggle PDF">
+                            <span class="toggle-icon">📄</span>
+                            <span class="toggle-label">PDF</span>
+                        </button>
+                        <button id="toggleCaptions" class="panel-toggle active" title="Toggle Subtitles">
+                            <span class="toggle-icon">🎵</span>
+                            <span class="toggle-label">Subtitles</span>
+                        </button>
+                        <div class="toggle-divider"></div>
+                        <button id="toggleNightPdf" class="panel-toggle" title="Invert PDF colours (night mode)">
+                            <span class="toggle-icon">🌙</span>
+                            <span class="toggle-label">Night PDF</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-
-    <!-- Audio bar -->
-    <footer id="audioBar">
-        <div class="now-playing" id="nowPlaying">
-            <span class="np-icon">🎧</span>
-            <span class="np-title" id="trackTitle">No track loaded</span>
-        </div>
-        <audio id="audioPlayer" controls></audio>
-        <div class="speed-control">
-            <button class="speed-btn" id="speedBtn" title="Playback speed">1×</button>
-        </div>
-        <div id="panelToggles">
-            <button id="togglePdf" class="panel-toggle active" title="Toggle PDF">
-                <span class="toggle-icon">📄</span>
-                <span class="toggle-label">PDF</span>
-            </button>
-            <button id="toggleCaptions" class="panel-toggle active" title="Toggle Subtitles">
-                <span class="toggle-icon">🎵</span>
-                <span class="toggle-label">Subtitles</span>
-            </button>
-            <div class="toggle-divider"></div>
-            <button id="toggleNightPdf" class="panel-toggle" title="Invert PDF colours (night mode)">
-                <span class="toggle-icon">🌙</span>
-                <span class="toggle-label">Night PDF</span>
-            </button>
-        </div>
-    </footer>
 
     <!-- Shortcut toast -->
     <div class="shortcut-toast" id="shortcutToast"></div>
