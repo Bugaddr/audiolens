@@ -109,9 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show panel toggles
         applyPanelVisibility();
 
-        // Append PDF parameters for Odd Spread and Fit
+        // Append PDF parameters — two-page spread, page-fit zoom
         const paramStr = pdfUrl.includes('#') ? '&' : '#';
-        pdfFrame.src = pdfUrl + paramStr + 'pageLayout=TwoPageRight&view=Fit';
+        pdfFrame.src = pdfUrl + paramStr + 'pageLayout=TwoPageRight&view=FitH';
         pdfFrame.style.display = 'block';
 
         audioPlayer.src = audioUrl;
