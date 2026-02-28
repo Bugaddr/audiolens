@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audiolens — Dyslexia-Friendly Reader</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css?v=4">
+    <link rel="stylesheet" href="/static/styles.css?v=7">
 </head>
 
 <body>
@@ -52,9 +52,9 @@
         <div class="history-list" id="historyList"></div>
     </div>
 
-    <!-- Main split -->
+    <!-- Main content -->
     <div id="mainContent">
-        <!-- PDF -->
+        <!-- PDF (full width) -->
         <div id="pdfPanel">
             <iframe id="pdfFrame"></iframe>
             <div id="pdfEmpty" class="empty-state">
@@ -64,49 +64,29 @@
             </div>
         </div>
 
-        <div id="resizer"></div>
+        <!-- Movie-style caption overlay -->
+        <div id="captionOverlay" class="caption-overlay">
+            <div id="captionText" class="caption-text"></div>
+        </div>
+    </div>
 
-        <!-- captions -->
-        <div id="captionsPanel">
-            <div class="captions-fade-top"></div>
-            <div id="captionsScroll">
-                <div class="spacer"></div>
-                <div id="captionsContent"></div>
-                <div class="spacer"></div>
-            </div>
-            <div class="captions-fade-bottom"></div>
-            <div id="captionsEmpty" class="empty-state">
-                <div class="empty-icon">🎵</div>
-                <h3>Synced captions</h3>
-                <p>Words will light up as the audio plays</p>
-            </div>
-
-            <!-- Audio controls (embedded in captions panel) -->
-            <div id="audioBar">
-                <div class="now-playing" id="nowPlaying">
-                    <span class="np-icon">🎧</span>
-                    <span class="np-title" id="trackTitle">No track loaded</span>
-                </div>
-                <audio id="audioPlayer" controls></audio>
-                <div class="audio-bar-row">
-                    <div class="speed-control">
-                        <button class="speed-btn" id="speedBtn" title="Playback speed">1×</button>
-                    </div>
-                    <div id="panelToggles">
-                        <button id="togglePdf" class="panel-toggle active" title="Toggle PDF">
-                            <span class="toggle-icon">📄</span>
-                            <span class="toggle-label">PDF</span>
-                        </button>
-                        <button id="toggleCaptions" class="panel-toggle active" title="Toggle Subtitles">
-                            <span class="toggle-icon">🎵</span>
-                            <span class="toggle-label">Subtitles</span>
-                        </button>
-                        <div class="toggle-divider"></div>
-                        <button id="toggleNightPdf" class="panel-toggle" title="Invert PDF colours (night mode)">
-                            <span class="toggle-icon">🌙</span>
-                            <span class="toggle-label">Night PDF</span>
-                        </button>
-                    </div>
+    <!-- Compact audio bar -->
+    <div id="audioBar">
+        <div class="audio-bar-inner">
+            <audio id="audioPlayer" controls></audio>
+            <div class="audio-bar-controls">
+                <button class="speed-btn" id="speedBtn" title="Playback speed">1×</button>
+                <div class="bar-divider"></div>
+                <div id="panelToggles">
+                    <button id="toggleCaptions" class="panel-toggle" title="Toggle Subtitles">
+                        <span class="toggle-icon">🎵</span>
+                        <span class="toggle-label">Subtitles</span>
+                    </button>
+                    <div class="toggle-divider"></div>
+                    <button id="toggleNightPdf" class="panel-toggle" title="Invert PDF colours (night mode)">
+                        <span class="toggle-icon">🌙</span>
+                        <span class="toggle-label">Night</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -115,7 +95,7 @@
     <!-- Shortcut toast -->
     <div class="shortcut-toast" id="shortcutToast"></div>
 
-    <script src="/static/app.js?v=4"></script>
+    <script src="/static/app.js?v=7"></script>
 </body>
 
 </html>

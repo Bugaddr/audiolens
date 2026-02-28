@@ -2,12 +2,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const $ = id => document.getElementById(id);
     const uploadBtn = $('uploadBtn'), statusMsg = $('statusMessage');
     const pdfFrame = $('pdfFrame'), audioPlayer = $('audioPlayer');
-    const captionsScroll = $('captionsScroll'), captionsContent = $('captionsContent');
+    const captionOverlay = $('captionOverlay'), captionText = $('captionText');
     const pdfUpload = $('pdfUpload'), audioUpload = $('audioUpload');
     const pdfLabel = $('pdfLabel'), audioLabel = $('audioLabel');
-    const trackTitle = $('trackTitle');
 
-    let poll = null, lines = [], activeLine = null, currentJobId = null;
+    let poll = null, segments = [], activeIdx = -1, currentJobId = null;
 
     // File selection feedback
     pdfUpload.addEventListener('change', () => {
@@ -85,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show reader
     function show(pdfUrl, audioUrl, transcript, title) {
         $('pdfEmpty')?.remove();
-        $('captionsEmpty')?.remove();
 
         // Hide history when reading
         if ($('historyBar')) {
@@ -96,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
             $('topBar').style.display = 'none';
         }
 
-        // Show panel toggles (they live inside audioBar, which is shown via flex)
+        // Show panel toggles
         applyPanelVisibility();
 
         // Append PDF parameters for Odd Spread and Fit
@@ -105,21 +103,16 @@ document.addEventListener('DOMContentLoaded', () => {
         pdfFrame.style.display = 'block';
 
         audioPlayer.src = audioUrl;
-        $('audioBar').style.display = 'flex';
-
-        // Position the bottom fade above the audio bar
-        const fadeBottom = captionsPanelEl.querySelector('.captions-fade-bottom');
-        if (fadeBottom) fadeBottom.classList.add('above-bar');
-
-        trackTitle.textContent = title || 'Now Playing';
+        $('audioBar').style.display = 'block';
 
         buildcaptions(transcript);
     }
 
-    // Build captions
+    // Build captions — just store segment data, no DOM elements
     function buildcaptions(data) {
-        captionsContent.innerHTML = '';
-        lines = [];
+        segments = [];
+        activeIdx = -1;
+        captionText.textContent = '';
         if (!data?.segments) return;
 
         for (const seg of data.segments) {
@@ -127,25 +120,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const text = (hasW ? seg.words.map(w => w.word.trim()).join(' ') : seg.text || '').trim();
             if (!text) continue;
 
-            const el = document.createElement('div');
-            el.className = 'caption-line';
-            el.textContent = text;
-
             const start = hasW ? seg.words[0].start : seg.start;
             const end = hasW ? seg.words.at(-1).end : seg.end;
-
-            // Timestamp badge
-            const timeBadge = document.createElement('span');
-            timeBadge.className = 'caption-time';
-            const m = Math.floor(start / 60);
-            const s = Math.floor(start % 60).toString().padStart(2, '0');
-            timeBadge.textContent = m + ':' + s;
-            el.appendChild(timeBadge);
-
-            el.onclick = () => { audioPlayer.currentTime = start; audioPlayer.play(); };
-
-            captionsContent.appendChild(el);
-            lines.push({ el, start, end });
+            segments.push({ text, start, end });
         }
     }
 
@@ -204,42 +181,25 @@ document.addEventListener('DOMContentLoaded', () => {
         startPoll(lastJobId);
     }
 
-    // Sync captions to audio (60fps loop instead of laggy timeupdate)
-    let scrollClientHeight = captionsScroll.clientHeight;
-    // Update cached height on resize
-    window.addEventListener('resize', () => { scrollClientHeight = captionsScroll.clientHeight; });
-
+    // Sync captions to audio — movie-style: show current line only
     function synccaptions() {
         requestAnimationFrame(synccaptions);
+        if (!segments.length || !captionsVisible) return;
 
-        // Add 0.15s lead time so highlights trigger exactly as the word is spoken
         const t = audioPlayer.currentTime + 0.15;
-        if (!lines.length) return;
-
         let idx = -1;
-        for (let i = 0; i < lines.length; i++) {
-            if (t >= lines[i].start && t <= lines[i].end) { idx = i; break; }
-            if (lines[i].start > t) break;
+        for (let i = 0; i < segments.length; i++) {
+            if (t >= segments[i].start && t <= segments[i].end) { idx = i; break; }
+            if (segments[i].start > t) break;
         }
 
-        if (idx !== -1 && activeLine !== lines[idx].el) {
-            lines.forEach(l => l.el.classList.remove('active', 'near'));
-            lines[idx].el.classList.add('active');
-
-            for (let o = -2; o <= 2; o++) {
-                const j = idx + o;
-                if (o && j >= 0 && j < lines.length) lines[j].el.classList.add('near');
+        if (idx !== activeIdx) {
+            activeIdx = idx;
+            if (idx !== -1) {
+                captionText.textContent = segments[idx].text;
+            } else {
+                captionText.textContent = '';
             }
-
-            const el = lines[idx].el;
-            captionsScroll.scrollTo({
-                top: el.offsetTop - scrollClientHeight / 2 + el.offsetHeight / 2,
-                behavior: 'smooth'
-            });
-            activeLine = el;
-        } else if (idx === -1 && activeLine) {
-            lines.forEach(l => l.el.classList.remove('active', 'near'));
-            activeLine = null;
         }
     }
     requestAnimationFrame(synccaptions);
@@ -260,107 +220,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedTime = localStorage.getItem('pos_' + audioPathName);
         if (savedTime && parseFloat(savedTime) > 2) {
             audioPlayer.currentTime = parseFloat(savedTime);
-            // Run one sync frame immediately to scroll the captions down
-            synccaptions();
         }
     });
 
     // --- Panel Toggle Logic ---
     const panelToggles = $('panelToggles');
-    const togglePdfBtn = $('togglePdf');
     const toggleCaptionsBtn = $('toggleCaptions');
-    const pdfPanel = $('pdfPanel');
-    const resizerEl = $('resizer');
-    const captionsPanelEl = $('captionsPanel');
 
     // Restore saved toggle state
-    const savedPdfVisible = localStorage.getItem('panelPdfVisible');
     const savedCaptionsVisible = localStorage.getItem('panelCaptionsVisible');
-    let pdfVisible = savedPdfVisible !== 'false';
-    let captionsVisible = savedCaptionsVisible !== 'false';
+    let captionsVisible = savedCaptionsVisible !== 'false'; // default ON
 
     function applyPanelVisibility() {
         panelToggles.style.display = 'flex';
-        pdfPanel.classList.toggle('panel-hidden', !pdfVisible);
-        captionsPanelEl.classList.toggle('panel-hidden', !captionsVisible);
-
-        const solo = captionsVisible && !pdfVisible;
-        captionsPanelEl.classList.toggle('panel-solo', solo);
-        // Clear inline width when solo so CSS flex:1 takes over; restore when split
-        if (solo) {
-            captionsPanelEl.style.width = '';
-        } else {
-            const saved = localStorage.getItem('captionsWidth');
-            if (saved) captionsPanelEl.style.width = saved;
-        }
-
-        resizerEl.classList.toggle('panel-hidden', !pdfVisible || !captionsVisible);
-        togglePdfBtn.classList.toggle('active', pdfVisible);
+        captionOverlay.classList.toggle('hidden', !captionsVisible);
         toggleCaptionsBtn.classList.toggle('active', captionsVisible);
-        // Mark the sole-active button as locked so user knows it can't be hidden
-        togglePdfBtn.classList.toggle('locked', pdfVisible && !captionsVisible);
-        toggleCaptionsBtn.classList.toggle('locked', captionsVisible && !pdfVisible);
-        localStorage.setItem('panelPdfVisible', pdfVisible);
         localStorage.setItem('panelCaptionsVisible', captionsVisible);
     }
 
-    togglePdfBtn.addEventListener('click', () => {
-        // Don't allow hiding both panels
-        if (pdfVisible && !captionsVisible) return;
-        pdfVisible = !pdfVisible;
-        applyPanelVisibility();
-    });
-
     toggleCaptionsBtn.addEventListener('click', () => {
-        // Don't allow hiding both panels
-        if (captionsVisible && !pdfVisible) return;
         captionsVisible = !captionsVisible;
         applyPanelVisibility();
     });
-
-    // --- Adjustable Split View Resizer ---
-    const resizer = $('resizer');
-    const captionsPanel = $('captionsPanel');
-    const pdfFrameEl = $('pdfFrame');
-    let isResizing = false;
-
-    // Restore saved width (skip if subtitle-only mode — solo uses flex:1)
-    const savedWidth = localStorage.getItem('captionsWidth');
-    if (savedWidth && captionsPanel && !captionsPanel.classList.contains('panel-solo')) {
-        captionsPanel.style.width = savedWidth;
-    }
-
-    if (resizer && captionsPanel) {
-        resizer.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            resizer.classList.add('active');
-            document.body.style.cursor = 'col-resize';
-            if (pdfFrameEl) pdfFrameEl.style.pointerEvents = 'none'; // Prevent iframe from eating mouse events
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            // Calculate new width for the right panel (distance from right edge of window to mouse)
-            const newWidth = document.body.clientWidth - e.clientX;
-
-            // Constrain width between 250px and (window width - 250px)
-            if (newWidth >= 250 && newWidth <= document.body.clientWidth - 250) {
-                captionsPanel.style.width = newWidth + 'px';
-            }
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isResizing) {
-                isResizing = false;
-                resizer.classList.remove('active');
-                document.body.style.cursor = '';
-                if (pdfFrameEl) pdfFrameEl.style.pointerEvents = 'auto';
-
-                // Save preferred width
-                localStorage.setItem('captionsWidth', captionsPanel.style.width);
-            }
-        });
-    }
 
     // --- Night Mode (PDF Invert) ---
     const nightBtn = $('toggleNightPdf');

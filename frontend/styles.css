@@ -8,9 +8,9 @@
     --border: rgba(255, 255, 255, 0.06);
     --border-hover: rgba(255, 255, 255, 0.14);
     --text: #fafafa;
-    --text-dim: rgba(255, 255, 255, 0.12);
-    --text-mid: rgba(255, 255, 255, 0.4);
-    --text-muted: rgba(255, 255, 255, 0.55);
+    --text-dim: rgba(255, 255, 255, 0.4);
+    --text-mid: rgba(255, 255, 255, 0.55);
+    --text-muted: rgba(255, 255, 255, 0.65);
     --radius: 12px;
     --radius-sm: 8px;
     --ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -371,11 +371,6 @@ body {
     box-shadow: 0 0 8px rgba(250, 88, 106, 0.1);
 }
 
-.panel-toggle.active.locked {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 .toggle-divider {
     width: 1px;
     height: 20px;
@@ -395,56 +390,21 @@ body {
 }
 
 /* Panel hidden states */
-#pdfPanel.panel-hidden {
-    display: none !important;
-}
+/* (removed — captions are now inline overlay) */
 
-#captionsPanel.panel-hidden {
-    display: none !important;
-}
-
-/* When captions is the only visible panel, let it fill */
-#captionsPanel.panel-solo {
-    flex: 1 1 0% !important;
-    width: 0 !important;
-    min-width: 0 !important;
-    max-width: none !important;
-}
-
-#captionsPanel.panel-solo #captionsScroll {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 0 48px;
-}
-
-#captionsPanel.panel-solo .caption-line {
-    font-size: 1.5rem;
-    line-height: 1.65;
-}
-
-#captionsPanel.panel-solo #audioBar {
-    max-width: 720px;
-    margin: 0 auto;
-    width: 100%;
-}
-
-#resizer.panel-hidden {
-    display: none !important;
-}
-
-/* ── Split Layout ────────────────────────── */
+/* ── Layout ──────────────────────────────── */
 #mainContent {
     flex: 1;
     display: flex;
+    position: relative;
     overflow: hidden;
 }
 
-/* PDF Panel */
+/* PDF Panel — always full width */
 #pdfPanel {
     flex: 1;
     position: relative;
     background: #18181b;
-    border-right: 1px solid var(--border);
 }
 
 #pdfFrame {
@@ -459,152 +419,41 @@ body {
     filter: invert(1) hue-rotate(180deg);
 }
 
-/* Resizer */
-#resizer {
-    width: 6px;
-    background: transparent;
-    cursor: col-resize;
-    transition: background 0.2s;
-    z-index: 10;
-    margin: 0 -3px;
-    position: relative;
-}
-
-#resizer::after {
-    content: '';
+/* ── Movie-style Caption Overlay ────────── */
+.caption-overlay {
     position: absolute;
-    top: 50%;
+    bottom: 24px;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 4px;
-    height: 32px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.1);
-    opacity: 0;
-    transition: opacity .2s var(--ease);
-}
-
-#resizer:hover::after {
-    opacity: 1;
-}
-
-#resizer:hover,
-#resizer.active {
-    background: var(--accent);
-}
-
-#resizer.active::after {
-    opacity: 0;
-}
-
-/* ── Captions Panel ──────────────────────── */
-#captionsPanel {
-    width: clamp(250px, calc(100vw - (100vh - 44px) * 17 / 11), 400px);
-    min-width: 250px;
-    position: relative;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.captions-fade-top,
-.captions-fade-bottom {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 80px;
+    transform: translateX(-50%);
+    z-index: 6;
     pointer-events: none;
-    z-index: 2;
+    max-width: 80%;
+    width: fit-content;
+    text-align: center;
+    transition: opacity .3s var(--ease);
 }
 
-.captions-fade-top {
-    top: 0;
-    background: linear-gradient(to bottom, var(--bg) 10%, transparent);
-}
-
-.captions-fade-bottom {
-    bottom: 0;
-    background: linear-gradient(to top, var(--bg) 10%, transparent);
-    transition: bottom .2s var(--ease);
-}
-
-/* When audio bar is visible, lift fade above it */
-#captionsPanel .captions-fade-bottom.above-bar {
-    bottom: auto;
-}
-
-#captionsScroll {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0 28px;
-    scrollbar-width: none;
-}
-
-#captionsScroll::-webkit-scrollbar {
+.caption-overlay.hidden {
     display: none;
 }
 
-.spacer {
-    height: 45vh;
-}
-
-#captionsContent {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-/* Caption lines */
-.caption-line {
-    font-size: 1.15rem;
+.caption-text {
+    display: inline-block;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    font-size: 1.2rem;
     font-weight: 600;
-    line-height: 1.6;
-    color: var(--text-dim);
-    cursor: pointer;
-    transition: color .4s var(--ease), transform .4s var(--ease), background .2s var(--ease);
-    padding: 8px 14px;
-    border-radius: var(--radius-sm);
+    line-height: 1.5;
+    padding: 8px 20px;
+    border-radius: 8px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    max-width: 100%;
     word-wrap: break-word;
-    transform-origin: left center;
-    position: relative;
+    transition: opacity .25s var(--ease);
 }
 
-.caption-line:hover {
-    color: rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.caption-line.active {
-    color: var(--text);
-    transform: scale(1.02);
-    background: rgba(250, 88, 106, 0.06);
-    text-shadow: 0 0 40px rgba(250, 88, 106, 0.3);
-}
-
-.caption-line.near {
-    color: var(--text-mid);
-}
-
-/* Timestamp badge on caption hover */
-.caption-time {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: var(--text-mid);
-    background: var(--surface);
-    padding: 2px 8px;
-    border-radius: 4px;
-    opacity: 0;
-    transition: opacity .2s var(--ease);
-    pointer-events: none;
-}
-
-.caption-line:hover .caption-time {
-    opacity: 1;
+.caption-text:empty {
+    display: none;
 }
 
 /* Empty states */
@@ -646,68 +495,49 @@ body {
     line-height: 1.4;
 }
 
-/* ── Audio Bar (embedded in captions panel) ── */
+/* ── Audio Bar (compact single-row) ──────── */
 #audioBar {
     display: none;
-    flex-direction: column;
-    gap: 10px;
-    padding: 14px 16px;
+    flex-shrink: 0;
     background: var(--surface);
     border-top: 1px solid var(--border);
-    flex-shrink: 0;
+    z-index: 20;
 }
 
-.now-playing {
+#audioBar .audio-bar-inner {
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-width: 0;
+    gap: 12px;
+    padding: 8px 16px;
+    height: 48px;
 }
 
-.np-icon {
-    font-size: 1rem;
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, rgba(250, 88, 106, 0.12), rgba(245, 158, 11, 0.12));
-    border-radius: var(--radius-sm);
-}
-
-.np-title {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Custom audio player styling */
+/* Audio player */
 #audioBar audio {
-    width: 100%;
-    height: 32px;
+    flex: 1;
+    min-width: 0;
+    height: 28px;
     border-radius: 20px;
     filter: invert(1) hue-rotate(180deg);
     opacity: 0.85;
 }
 
-.audio-bar-row {
+.audio-bar-controls {
     display: flex;
     align-items: center;
-    gap: 10px;
-    justify-content: space-between;
-}
-
-/* Speed control */
-.speed-control {
-    display: flex;
-    align-items: center;
+    gap: 6px;
     flex-shrink: 0;
 }
 
+.bar-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    margin: 0 2px;
+    flex-shrink: 0;
+}
+
+/* Speed control */
 .speed-btn {
     padding: 4px 10px;
     background: rgba(255, 255, 255, 0.05);
@@ -720,6 +550,7 @@ body {
     cursor: pointer;
     transition: all .2s var(--ease);
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .speed-btn:hover {
@@ -787,18 +618,13 @@ body {
         font-size: 0.72rem;
     }
 
-    #mainContent {
-        flex-direction: column;
+    #captionOverlay {
+        max-width: 95%;
     }
 
-    #pdfPanel {
-        border-right: none;
-        border-bottom: 1px solid var(--border);
-    }
-
-    #captionsPanel {
-        width: 100% !important;
-        height: 40vh;
+    .caption-text {
+        font-size: 1rem;
+        padding: 6px 14px;
     }
 
     #historyBar {
@@ -810,12 +636,12 @@ body {
         padding: 10px 14px;
     }
 
-    #audioBar {
-        padding: 10px 12px;
+    #audioBar .audio-bar-inner {
         gap: 8px;
+        padding: 8px 10px;
     }
 
-    .now-playing {
+    .toggle-label {
         display: none;
     }
 }
