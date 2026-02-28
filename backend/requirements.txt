@@ -2,6 +2,4 @@ fastapi[standard]
 uvicorn
 openai-whisper
 python-multipart
-soundfile
-pydub
 pikepdf

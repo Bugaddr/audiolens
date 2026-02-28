@@ -4,14 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Audiolens — a dyslexia-friendly PDF and audiobook reader with synced captions">
+    <meta name="theme-color" content="#09090b">
+    <meta name="color-scheme" content="dark">
     <title>Audiolens — Dyslexia-Friendly Reader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css?v=8">
+    <link rel="stylesheet" href="/static/styles.css?v=9">
 </head>
 
 <body>
-    <!-- Toolbar (brand only — upload moves to hero) -->
-    <header id="topBar">
+    <noscript><p style="color:#fff;text-align:center;padding:2rem">JavaScript is required to run Audiolens.</p></noscript>
+
+    <!-- Toolbar -->
+    <header id="topBar" role="banner">
         <div class="brand-area">
             <div class="brand-logo">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="url(#g)" stroke-width="2.5">
@@ -28,43 +35,42 @@
         </div>
     </header>
 
-    <!-- Landing page (hero + history) -->
-    <div id="landingPage">
-        <div class="hero">
+    <!-- Landing page -->
+    <main id="landingPage" role="main">
+        <section class="hero" aria-label="Upload">
             <div class="hero-icon">🎧</div>
             <h1 class="hero-title">Read along with your audiobook</h1>
             <p class="hero-subtitle">Upload a PDF and audiobook to follow along with synced captions</p>
             <div class="hero-upload">
-                <label class="file-chip" id="pdfChip">
-                    <span class="chip-icon">📄</span>
+                <label class="file-chip" id="pdfChip" tabindex="0">
+                    <span class="chip-icon" aria-hidden="true">📄</span>
                     <span class="chip-label" id="pdfLabel">Choose PDF</span>
-                    <input type="file" id="pdfUpload" accept=".pdf" hidden>
+                    <input type="file" id="pdfUpload" accept=".pdf" hidden aria-label="Choose PDF file">
                 </label>
-                <label class="file-chip" id="audioChip">
-                    <span class="chip-icon">🎧</span>
+                <label class="file-chip" id="audioChip" tabindex="0">
+                    <span class="chip-icon" aria-hidden="true">🎧</span>
                     <span class="chip-label" id="audioLabel">Choose Audio</span>
-                    <input type="file" id="audioUpload" accept="audio/*" hidden>
+                    <input type="file" id="audioUpload" accept="audio/*" hidden aria-label="Choose audiobook file">
                 </label>
-                <button id="uploadBtn" class="upload-btn" disabled>
+                <button id="uploadBtn" class="upload-btn" disabled aria-label="Upload files">
                     <span class="btn-text">Upload</span>
-                    <div class="btn-spinner" id="spinner"></div>
+                    <div class="btn-spinner" id="spinner" aria-hidden="true"></div>
                 </button>
             </div>
-            <span id="statusMessage" class="status-msg"></span>
-        </div>
+            <span id="statusMessage" class="status-msg" role="status" aria-live="polite"></span>
+        </section>
 
         <!-- Recent Books -->
-        <div id="historyBar" style="display: none;">
-            <div class="history-title">Recent Books</div>
-            <div class="history-list" id="historyList"></div>
-        </div>
-    </div>
+        <section id="historyBar" style="display: none;" aria-label="Recent books">
+            <h2 class="history-title">Recent Books</h2>
+            <div class="history-list" id="historyList" role="list"></div>
+        </section>
+    </main>
 
-    <!-- Main content -->
-    <div id="mainContent">
-        <!-- PDF (full width) -->
+    <!-- Reader -->
+    <div id="mainContent" role="region" aria-label="Reader">
         <div id="pdfPanel" style="display:none;">
-            <iframe id="pdfFrame"></iframe>
+            <iframe id="pdfFrame" title="PDF document viewer"></iframe>
             <div id="pdfEmpty" class="empty-state">
                 <div class="empty-icon">📖</div>
                 <h3>Your PDF goes here</h3>
@@ -72,27 +78,27 @@
             </div>
         </div>
 
-        <!-- Movie-style caption overlay -->
-        <div id="captionOverlay" class="caption-overlay">
+        <!-- Caption overlay -->
+        <div id="captionOverlay" class="caption-overlay" aria-live="off" aria-atomic="true">
             <div id="captionText" class="caption-text"></div>
         </div>
     </div>
 
-    <!-- Compact audio bar -->
-    <div id="audioBar">
+    <!-- Audio bar -->
+    <div id="audioBar" role="region" aria-label="Audio controls">
         <div class="audio-bar-inner">
-            <audio id="audioPlayer" controls></audio>
+            <audio id="audioPlayer" controls aria-label="Audiobook player"></audio>
             <div class="audio-bar-controls">
                 <button class="speed-btn" id="speedBtn" title="Playback speed">1×</button>
                 <div class="bar-divider"></div>
                 <div id="panelToggles">
-                    <button id="toggleCaptions" class="panel-toggle" title="Toggle Subtitles">
-                        <span class="toggle-icon">🎵</span>
+                    <button id="toggleCaptions" class="panel-toggle" title="Toggle Subtitles" aria-pressed="true">
+                        <span class="toggle-icon" aria-hidden="true">🎵</span>
                         <span class="toggle-label">Subtitles</span>
                     </button>
-                    <div class="toggle-divider"></div>
-                    <button id="toggleNightPdf" class="panel-toggle" title="Invert PDF colours (night mode)">
-                        <span class="toggle-icon">🌙</span>
+                    <div class="toggle-divider" aria-hidden="true"></div>
+                    <button id="toggleNightPdf" class="panel-toggle" title="Invert PDF colours (night mode)" aria-pressed="false">
+                        <span class="toggle-icon" aria-hidden="true">🌙</span>
                         <span class="toggle-label">Night</span>
                     </button>
                 </div>
@@ -100,10 +106,10 @@
         </div>
     </div>
 
-    <!-- Shortcut toast -->
-    <div class="shortcut-toast" id="shortcutToast"></div>
+    <!-- Toast notifications -->
+    <div class="shortcut-toast" id="shortcutToast" role="status" aria-live="polite"></div>
 
-    <script src="/static/app.js?v=8"></script>
+    <script src="/static/app.js?v=9"></script>
 </body>
 
 </html>

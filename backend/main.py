@@ -4,6 +4,7 @@ import json
 import uuid
 import glob
 import hashlib
+import logging
 import shutil
 import subprocess
 import tempfile
@@ -13,7 +14,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import whisper
 
-app = FastAPI()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%H:%M:%S",
+)
+log = logging.getLogger("audiolens")
+
+app = FastAPI(title="Audiolens", version="1.0.0")
+
+MAX_PDF_SIZE = 200 * 1024 * 1024   # 200 MB
+MAX_AUDIO_SIZE = 500 * 1024 * 1024  # 500 MB
 
 UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
@@ -24,8 +35,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 JOBS_FILE = os.path.join(UPLOAD_DIR, "jobs.json")
 
-# Duration (in seconds) of each chunk for split-and-transcribe.
-CHUNK_DURATION = 1800  # 30 minutes
+CHUNK_DURATION = 1800  # 30 minutes per chunk
 
 def load_jobs():
     if os.path.exists(JOBS_FILE):
@@ -33,7 +43,7 @@ def load_jobs():
             with open(JOBS_FILE) as f:
                 return json.load(f)
         except Exception as e:
-            print(f"Error loading jobs: {e}")
+            log.warning("Failed to load jobs file: %s", e)
     return {}
 
 def save_jobs():
@@ -42,9 +52,9 @@ def save_jobs():
 
 jobs = load_jobs()
 
-print("Loading Whisper model...")
+log.info("Loading Whisper model…")
 model = whisper.load_model("tiny")
-print("Model loaded.")
+log.info("Model loaded.")
 
 
 def _get_audio_duration(audio_path):
@@ -79,16 +89,16 @@ def _transcribe_chunked(job_id, audio_path, audio_hash):
     """Split a long audio file into chunks, transcribe each, merge results."""
     chunk_dir = os.path.join(UPLOAD_DIR, f".chunks_{audio_hash}")
     try:
-        print(f"[{job_id}] Splitting audio into {CHUNK_DURATION}s chunks …")
+        log.info("[%s] Splitting audio into %ds chunks…", job_id, CHUNK_DURATION)
         chunks = _split_audio(audio_path, chunk_dir, CHUNK_DURATION)
-        print(f"[{job_id}] Created {len(chunks)} chunk(s).")
+        log.info("[%s] Created %d chunk(s).", job_id, len(chunks))
 
         all_segments = []
         seg_id = 0
         time_offset = 0.0
 
         for i, chunk_path in enumerate(chunks):
-            print(f"[{job_id}] Transcribing chunk {i + 1}/{len(chunks)} …")
+            log.info("[%s] Transcribing chunk %d/%d…", job_id, i + 1, len(chunks))
             result = model.transcribe(chunk_path, word_timestamps=True, fp16=False)
             for seg in result.get("segments", []):
                 seg["start"] += time_offset
@@ -112,7 +122,7 @@ def _transcribe_chunked(job_id, audio_path, audio_hash):
             del result
             gc.collect()
 
-            print(f"[{job_id}] Chunk {i + 1} done – {len(all_segments)} segment(s) so far.")
+            log.info("[%s] Chunk %d done – %d segment(s) so far.", job_id, i + 1, len(all_segments))
 
         return {"segments": all_segments}
     finally:
@@ -124,35 +134,37 @@ def transcribe_audio_task(job_id, audio_path, audio_hash):
     try:
         cache = os.path.join(UPLOAD_DIR, f"{audio_hash}.json")
         if os.path.exists(cache):
-            print(f"[{job_id}] Cache hit — loading transcript from {cache}")
+            log.info("[%s] Cache hit — loading transcript from %s", job_id, cache)
             with open(cache) as f:
                 result = json.load(f)
             segments = result.get("segments", [])
-            print(f"[{job_id}] Loaded {len(segments)} segment(s) from cache.")
+            log.info("[%s] Loaded %d segment(s) from cache.", job_id, len(segments))
         else:
             duration = _get_audio_duration(audio_path)
-            print(f"[{job_id}] Audio duration: {duration:.0f}s" if duration else f"[{job_id}] Could not determine duration")
+            if duration:
+                log.info("[%s] Audio duration: %.0fs", job_id, duration)
+            else:
+                log.info("[%s] Could not determine audio duration", job_id)
 
             if duration and duration > CHUNK_DURATION:
-                # Long file → chunked transcription to avoid OOM
-                print(f"[{job_id}] File is long ({duration:.0f}s), using chunked transcription")
+                log.info("[%s] Long file (%.0fs), using chunked transcription", job_id, duration)
                 result = _transcribe_chunked(job_id, audio_path, audio_hash)
             else:
-                print(f"[{job_id}] Starting Whisper transcription of: {audio_path}")
+                log.info("[%s] Starting Whisper transcription of: %s", job_id, audio_path)
                 result = model.transcribe(audio_path, word_timestamps=True, fp16=False)
 
             segments = result.get("segments", [])
-            print(f"[{job_id}] Transcription complete. {len(segments)} segment(s) produced.")
+            log.info("[%s] Transcription complete. %d segment(s).", job_id, len(segments))
             with open(cache, "w") as f:
                 json.dump(result, f)
-            print(f"[{job_id}] Transcript saved to cache: {cache}")
+            log.info("[%s] Transcript cached at %s", job_id, cache)
 
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["result"] = {"segments": segments}
         save_jobs()
-        print(f"[{job_id}] Job marked as completed.")
+        log.info("[%s] Job completed.", job_id)
     except Exception as e:
-        print(f"[{job_id}] Error during transcription: {e}")
+        log.error("[%s] Transcription error: %s", job_id, e)
         jobs[job_id]["status"] = "error"
         jobs[job_id]["error"] = str(e)
         save_jobs()
@@ -163,7 +175,12 @@ async def index():
     return os.path.join(FRONTEND_DIR, "index.html")
 
 
-def _stream_to_temp(upload_file, dest_dir):
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+def _stream_to_temp(upload_file, dest_dir, max_size):
     """Stream an UploadFile to a temp file on disk, computing MD5 along the way.
     Returns (tmp_path, hex_digest, total_bytes). Raises HTTPException if empty."""
     md5 = hashlib.md5()
@@ -172,12 +189,18 @@ def _stream_to_temp(upload_file, dest_dir):
     try:
         with os.fdopen(tmp_fd, "wb") as out:
             while True:
-                chunk = upload_file.file.read(1024 * 1024)  # 1 MiB chunks
+                chunk = upload_file.file.read(1024 * 1024)
                 if not chunk:
                     break
                 out.write(chunk)
                 md5.update(chunk)
                 total += len(chunk)
+                if total > max_size:
+                    os.unlink(tmp_path)
+                    raise HTTPException(
+                        413,
+                        f"{upload_file.filename} exceeds {max_size // (1024*1024)} MB limit",
+                    )
     except Exception:
         os.unlink(tmp_path)
         raise
@@ -191,9 +214,9 @@ def _stream_to_temp(upload_file, dest_dir):
 async def upload(background_tasks: BackgroundTasks, pdf_file: UploadFile = File(...), audio_file: UploadFile = File(...)):
     job_id = str(uuid.uuid4())
 
-    # Stream files to disk in chunks — never hold full file in RAM
-    pdf_tmp, pdf_hash, pdf_size = _stream_to_temp(pdf_file, UPLOAD_DIR)
-    audio_tmp, audio_hash, audio_size = _stream_to_temp(audio_file, UPLOAD_DIR)
+    # Stream files to disk — never hold full file in RAM
+    pdf_tmp, pdf_hash, pdf_size = _stream_to_temp(pdf_file, UPLOAD_DIR, MAX_PDF_SIZE)
+    audio_tmp, audio_hash, audio_size = _stream_to_temp(audio_file, UPLOAD_DIR, MAX_AUDIO_SIZE)
 
     pdf_ext = os.path.splitext(pdf_file.filename)[1] or ".pdf"
     audio_ext = os.path.splitext(audio_file.filename)[1] or ".mp3"
@@ -206,24 +229,23 @@ async def upload(background_tasks: BackgroundTasks, pdf_file: UploadFile = File(
     # Move temp files to final location (skip if duplicate already exists)
     if os.path.exists(pdf_path):
         os.unlink(pdf_tmp)
-        print(f"[{job_id}] PDF already on disk, skipping write")
+        log.info("[%s] PDF already on disk, skipping write", job_id)
     else:
         shutil.move(pdf_tmp, pdf_path)
-        # Repair PDF structure (fixes missing endobj, broken xref, etc.)
         try:
             pdf = pikepdf.open(pdf_path, allow_overwriting_input=True)
             pdf.save(pdf_path, linearize=True)
             pdf.close()
-            print(f"[{job_id}] Saved & repaired PDF: {os.path.getsize(pdf_path)} bytes")
+            log.info("[%s] Saved & repaired PDF: %d bytes", job_id, os.path.getsize(pdf_path))
         except Exception as e:
-            print(f"[{job_id}] PDF repair failed ({e}), serving original")
+            log.warning("[%s] PDF repair failed (%s), serving original", job_id, e)
 
     if os.path.exists(audio_path):
         os.unlink(audio_tmp)
-        print(f"[{job_id}] Audio already on disk, skipping write")
+        log.info("[%s] Audio already on disk, skipping write", job_id)
     else:
         shutil.move(audio_tmp, audio_path)
-        print(f"[{job_id}] Saved Audio: {audio_size} bytes")
+        log.info("[%s] Saved audio: %d bytes", job_id, audio_size)
 
     jobs[job_id] = {
         "id": job_id,
@@ -235,15 +257,16 @@ async def upload(background_tasks: BackgroundTasks, pdf_file: UploadFile = File(
     }
     save_jobs()
 
-    # Check transcript cache
+    # Check transcript cache — skip background task if already transcribed
     cache = os.path.join(UPLOAD_DIR, f"{audio_hash}.json")
     if os.path.exists(cache):
-        print(f"[{job_id}] Cached transcript found.")
+        log.info("[%s] Cached transcript found.", job_id)
         with open(cache) as f:
             jobs[job_id]["result"] = json.load(f)
         jobs[job_id]["status"] = "completed"
+        save_jobs()
     else:
-        print(f"[{job_id}] Queuing background transcription task for audio: {audio_name}")
+        log.info("[%s] Queuing transcription for %s", job_id, audio_name)
         background_tasks.add_task(transcribe_audio_task, job_id, audio_path, audio_hash)
 
     return {"job_id": job_id}

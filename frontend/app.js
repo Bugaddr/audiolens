@@ -7,6 +7,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const pdfLabel = $('pdfLabel'), audioLabel = $('audioLabel');
 
     let poll = null, segments = [], activeIdx = -1, currentJobId = null;
+    let saveThrottle = 0;
+
+    /** Escape HTML to prevent XSS in dynamic content. */
+    function esc(str) {
+        const el = document.createElement('span');
+        el.textContent = str;
+        return el.innerHTML;
+    }
 
     // File selection feedback
     pdfUpload.addEventListener('change', () => {
@@ -43,11 +51,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res = await fetch('/upload', { method: 'POST', body: fd });
+            if (!res.ok) throw new Error(res.statusText);
             const { job_id } = await res.json();
             setStatus('Transcribing…', 'working');
             startPoll(job_id);
-        } catch {
-            setStatus('Upload failed', 'error');
+        } catch (err) {
+            setStatus('Upload failed — ' + (err.message || 'network error'), 'error');
             uploadBtn.disabled = false;
             uploadBtn.classList.remove('loading');
         }
@@ -70,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 uploadBtn.disabled = false;
                 uploadBtn.classList.remove('loading');
                 currentJobId = id;
-                localStorage.setItem('lastJobId', id);
                 show(d.pdf_url, d.audio_url, d.transcript, d.title);
             } else if (d.status === 'error') {
                 clearInterval(poll);
@@ -157,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     el.innerHTML = `
                         <div class="history-icon">📚</div>
                         <div class="history-info">
-                            <div class="history-name">${job.title}</div>
+                            <div class="history-name">${esc(job.title)}</div>
                             ${progressText}
                         </div>
                     `;
@@ -201,11 +209,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     requestAnimationFrame(synccaptions);
 
-    // Save progress periodically
+    // Save progress (throttled to once per 3 s)
     let audioPathName = '';
     audioPlayer.addEventListener('timeupdate', () => {
+        const now = Date.now();
+        if (now - saveThrottle < 3000) return;
+        saveThrottle = now;
         if (audioPlayer.src && audioPlayer.currentTime > 0) {
-            // Save current time keyed by the audio URL
             if (!audioPathName) audioPathName = new URL(audioPlayer.src).pathname;
             localStorage.setItem('pos_' + audioPathName, audioPlayer.currentTime);
         }
@@ -232,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         panelToggles.style.display = 'flex';
         captionOverlay.classList.toggle('hidden', !captionsVisible);
         toggleCaptionsBtn.classList.toggle('active', captionsVisible);
+        toggleCaptionsBtn.setAttribute('aria-pressed', captionsVisible);
         localStorage.setItem('panelCaptionsVisible', captionsVisible);
     }
 
@@ -247,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyNightMode() {
         pdfFrame.classList.toggle('night-mode', nightMode);
         nightBtn.classList.toggle('active', nightMode);
+        nightBtn.setAttribute('aria-pressed', nightMode);
         localStorage.setItem('pdfNightMode', nightMode);
     }
     // Apply saved preference on load
@@ -302,7 +314,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'ArrowRight':
                 e.preventDefault();
-                audioPlayer.currentTime = Math.min(audioPlayer.duration || 0, audioPlayer.currentTime + 10);
+                audioPlayer.currentTime = Math.min(
+                    isFinite(audioPlayer.duration) ? audioPlayer.duration : Infinity,
+                    audioPlayer.currentTime + 10
+                );
                 showToast('<kbd>→</kbd> +10s');
                 break;
             case 'ArrowUp':
