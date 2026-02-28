@@ -85,14 +85,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function show(pdfUrl, audioUrl, transcript, title) {
         $('pdfEmpty')?.remove();
 
-        // Hide history when reading
-        if ($('historyBar')) {
-            $('historyBar').style.display = 'none';
+        // Hide landing page
+        if ($('landingPage')) {
+            $('landingPage').style.display = 'none';
         }
         // Hide top navbar when reading
         if ($('topBar')) {
             $('topBar').style.display = 'none';
         }
+
+        // Show main content + PDF panel
+        $('mainContent').style.display = 'flex';
+        $('pdfPanel').style.display = 'block';
 
         // Show panel toggles
         applyPanelVisibility();
@@ -173,13 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     loadHistory();
-
-    // Restore last open page
-    const lastJobId = localStorage.getItem('lastJobId');
-    if (lastJobId) {
-        setStatus('Restoring last session…', 'working');
-        startPoll(lastJobId);
-    }
 
     // Sync captions to audio — movie-style: show current line only
     function synccaptions() {

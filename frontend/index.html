@@ -6,11 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audiolens — Dyslexia-Friendly Reader</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css?v=7">
+    <link rel="stylesheet" href="/static/styles.css?v=8">
 </head>
 
 <body>
-    <!-- Toolbar -->
+    <!-- Toolbar (brand only — upload moves to hero) -->
     <header id="topBar">
         <div class="brand-area">
             <div class="brand-logo">
@@ -26,36 +26,44 @@
             </div>
             <span class="brand-name">Audiolens</span>
         </div>
-
-        <div class="upload-area">
-            <label class="file-chip" id="pdfChip">
-                <span class="chip-icon">📄</span>
-                <span class="chip-label" id="pdfLabel">Choose PDF</span>
-                <input type="file" id="pdfUpload" accept=".pdf" hidden>
-            </label>
-            <label class="file-chip" id="audioChip">
-                <span class="chip-icon">🎧</span>
-                <span class="chip-label" id="audioLabel">Choose Audio</span>
-                <input type="file" id="audioUpload" accept="audio/*" hidden>
-            </label>
-            <button id="uploadBtn" class="upload-btn" disabled>
-                <span class="btn-text">Upload</span>
-                <div class="btn-spinner" id="spinner"></div>
-            </button>
-            <span id="statusMessage" class="status-msg"></span>
-        </div>
     </header>
 
-    <!-- Recent Books (History) -->
-    <div id="historyBar" style="display: none;">
-        <div class="history-title">Recent Books</div>
-        <div class="history-list" id="historyList"></div>
+    <!-- Landing page (hero + history) -->
+    <div id="landingPage">
+        <div class="hero">
+            <div class="hero-icon">🎧</div>
+            <h1 class="hero-title">Read along with your audiobook</h1>
+            <p class="hero-subtitle">Upload a PDF and audiobook to follow along with synced captions</p>
+            <div class="hero-upload">
+                <label class="file-chip" id="pdfChip">
+                    <span class="chip-icon">📄</span>
+                    <span class="chip-label" id="pdfLabel">Choose PDF</span>
+                    <input type="file" id="pdfUpload" accept=".pdf" hidden>
+                </label>
+                <label class="file-chip" id="audioChip">
+                    <span class="chip-icon">🎧</span>
+                    <span class="chip-label" id="audioLabel">Choose Audio</span>
+                    <input type="file" id="audioUpload" accept="audio/*" hidden>
+                </label>
+                <button id="uploadBtn" class="upload-btn" disabled>
+                    <span class="btn-text">Upload</span>
+                    <div class="btn-spinner" id="spinner"></div>
+                </button>
+            </div>
+            <span id="statusMessage" class="status-msg"></span>
+        </div>
+
+        <!-- Recent Books -->
+        <div id="historyBar" style="display: none;">
+            <div class="history-title">Recent Books</div>
+            <div class="history-list" id="historyList"></div>
+        </div>
     </div>
 
     <!-- Main content -->
     <div id="mainContent">
         <!-- PDF (full width) -->
-        <div id="pdfPanel">
+        <div id="pdfPanel" style="display:none;">
             <iframe id="pdfFrame"></iframe>
             <div id="pdfEmpty" class="empty-state">
                 <div class="empty-icon">📖</div>
@@ -95,7 +103,7 @@
     <!-- Shortcut toast -->
     <div class="shortcut-toast" id="shortcutToast"></div>
 
-    <script src="/static/app.js?v=7"></script>
+    <script src="/static/app.js?v=8"></script>
 </body>
 
 </html>
