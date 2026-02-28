@@ -472,7 +472,7 @@ body {
 }
 
 #pdfFrame.night-mode {
-    filter: invert(1) hue-rotate(180deg);
+    filter: invert(1) hue-rotate(180deg) saturate(0) brightness(0.8) contrast(1.6);
 }
 
 /* ── Movie-style Caption Overlay ────────── */
